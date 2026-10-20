@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Teacher — Samacheer Kalvi performance dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d1014;
+    --surface: #151a20;
+    --border: #232a33;
+    --text: #e3e8ee;
+    --muted: #8a94a3;
+    --primary: #6aa9e0;
+    --accent: #b06fd8;
+    --series-1: #b06fd8;
+    --series-2: #7fe3b0;
+    --series-3: #e2698c;
+    --series-4: #86d9e6;
+    --series-5: #4d86c4;
+    --series-6: #d7e87f;
+    --series-other: #8a94a3;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Archivo', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
+  h1 { font-size: 40px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
+  h2 { font-size: 17px; font-weight: 600; line-height: 1.35; }
+  p { margin: 0; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .axis { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  .label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+  .readout { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .small { font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+  /* -------------------------------------------------------------- nav --- */
+  header.nav { background: var(--bg); border-bottom: 1px solid var(--border); padding: 14px 32px; }
+  .nav-inner { max-width: 1216px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .wordmark { font-size: 18px; font-weight: 700; }
+  .nav-link { font-size: 13px; font-weight: 500; color: var(--text); border-bottom: 2px solid var(--primary); padding-bottom: 6px; }
+  .env { margin-left: auto; border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+
+  main { max-width: 1216px; margin: 0 auto; padding: 40px 32px; }
+  .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stack { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ------------------------------------------------------------ frame --- */
+  .frame { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .dock { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+  .legend { margin-left: auto; display: flex; flex-wrap: wrap; gap: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  .swatch { width: 8px; height: 8px; border-radius: 1px; display: inline-block; }
+
+  /* --------------------------------------------------- buttons + chips --- */
+  .btn {
+    background: var(--primary); color: var(--bg); border: 1px solid var(--primary); border-radius: 6px;
+    font-family: 'Archivo', system-ui, sans-serif; font-size: 13px; font-weight: 600; padding: 11px 18px;
+    min-height: 40px; cursor: pointer; transition: background 120ms ease-out, border-color 120ms ease-out;
+  }
+  .btn:hover { background: #86bbe8; border-color: #86bbe8; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: rgba(106, 169, 224, 0.08); border-color: var(--primary); }
+  .btn-danger { background: transparent; color: var(--series-3); border: 1px solid var(--border); min-height: 32px; padding: 6px 10px; font-size: 12px; }
+  .btn-danger:hover { border-color: var(--series-3); background: rgba(226, 105, 140, 0.1); }
+  .chip {
+    border: 1px solid var(--border); border-radius: 5px; background: transparent; color: var(--muted);
+    font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; padding: 5px 10px; min-height: 28px;
+    cursor: pointer; transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+  }
+  .chip:hover { color: var(--text); }
+  .chip[aria-pressed='true'] { color: var(--bg); background: var(--primary); border-color: var(--primary); }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .btn:focus-visible, .chip:focus-visible, .handle:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--primary); outline-offset: 2px;
+  }
+
+  /* ------------------------------------------------------------ plots --- */
+  .plot-wrap { padding: 18px 20px 0; }
+  .plot-empty { height: 190px; display: flex; align-items: center; justify-content: center; color: var(--muted); text-align: center; }
+  svg { display: block; overflow: visible; }
+  .grid-line { stroke: var(--border); stroke-opacity: 0.6; stroke-width: 1; }
+  .guide-line { stroke: var(--border); stroke-width: 1; }
+  .tick { fill: var(--muted); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; }
+  .series-line { fill: none; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; animation: draw-in 300ms ease-out 1; }
+  @keyframes draw-in { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) { .series-line { animation: none; } }
+
+  /* ------------------------------------------------------- range strip --- */
+  .strip { position: relative; height: 48px; background: var(--bg); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-top: 18px; }
+  .brush { position: absolute; top: 0; bottom: 0; background: rgba(176, 111, 216, 0.14); border-left: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+  .handle { position: absolute; top: 0; bottom: 0; width: 12px; background: transparent; border: 0; cursor: ew-resize; padding: 0; }
+  .handle-l { left: -7px; }
+  .handle-r { right: -7px; }
+  .window { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: var(--muted); padding: 8px 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+  /* --------------------------------------------------------- markers  --- */
+  .glyph { display: inline-block; width: 9px; height: 9px; flex: none; }
+  .glyph-triangle { background: var(--series-1); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+  .glyph-diamond { background: var(--series-3); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+  .glyph-square { background: var(--series-other); }
+
+  /* ----------------------------------------------------------- layout --- */
+  .row-2 { display: grid; gap: 20px; grid-template-columns: 1fr; }
+  @media (min-width: 860px) { .row-2 { grid-template-columns: 1fr 1fr; } }
+  .pad { padding: 18px 20px; }
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list > li { padding: 16px 20px; border-top: 1px solid var(--border); }
+  ul.list > li:first-child { border-top: 0; }
+  .line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+  .band { border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+  .band.critical { border-color: var(--series-3); color: var(--series-3); }
+  .bar { margin-top: 12px; height: 6px; border-radius: 2px; background: #1b2129; overflow: hidden; }
+  .bar > div { height: 100%; border-radius: 2px; }
+  .subject-name { min-width: 140px; font-weight: 500; }
+  .push { margin-left: auto; }
+  .link {
+    color: var(--primary); font-size: 13px; font-weight: 500; text-decoration: none;
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; white-space: nowrap;
+  }
+  .link:hover { border-color: var(--primary); background: rgba(106, 169, 224, 0.08); }
+  .empty { padding: 48px 20px; text-align: center; }
+  .empty h2 { font-size: 26px; font-weight: 600; line-height: 1.25; }
+  .empty p { max-width: 46ch; margin: 8px auto 0; color: var(--muted); }
+  .note { border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; margin-top: 12px; background: var(--bg); }
+  .note .mono { font-size: 11px; color: var(--muted); word-break: break-all; }
+
+  /* ------------------------------------------------------------ forms --- */
+  dialog {
+    border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text);
+    padding: 0; width: min(680px, calc(100vw - 32px)); max-height: 88vh;
+  }
+  dialog::backdrop { background: rgba(6, 8, 11, 0.72); }
+  .dialog-head { padding: 20px 20px 0; }
+  .dialog-body { padding: 16px 20px; overflow: auto; }
+  .dialog-foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--border); }
+  .grid-fields { display: grid; gap: 14px; grid-template-columns: 1fr; }
+  @media (min-width: 620px) { .grid-fields { grid-template-columns: 1fr 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+  input, select, textarea {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+    padding: 9px 10px; font-family: 'Archivo', system-ui, sans-serif; font-size: 14px; min-height: 40px; width: 100%;
+  }
+  input.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  textarea { min-height: 76px; resize: vertical; }
+  .marks-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 4px; }
+  .error { color: var(--series-3); font-size: 13px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px;
+    font-size: 14px; box-shadow: none; opacity: 0; pointer-events: none; transition: opacity 120ms ease-out;
+  }
+  .toast.show { opacity: 1; }
+  footer { max-width: 1216px; margin: 0 auto; padding: 0 32px 48px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <span class="wordmark">AI Teacher</span>
+    <span class="nav-link">Performance</span>
+    <span class="env">samacheer · tn-board</span>
+  </div>
+</header>
+
+<main>
+  <div class="page-head">
+    <div>
+      <h1 id="student-name">Student performance</h1>
+      <p id="student-meta" class="small" style="margin-top:4px">Record a set of marks to start tracking a student.</p>
+    </div>
+    <button class="btn" id="open-record">+ Record marks</button>
+  </div>
+
+  <div class="chip-row" id="student-chips" style="margin-bottom:20px"></div>
+
+  <div id="app" class="stack"></div>
+</main>
+
+<footer>
+  Rule-based subject ranking · marks and mistakes are saved in this browser only.
+  <button class="btn-danger" id="reset" style="margin-left:8px">Reset to demo data</button>
+</footer>
+
+<!-- ------------------------------------------------------ record marks --- -->
+<dialog id="record-dialog">
+  <form id="record-form" method="dialog">
+    <div class="dialog-head">
+      <h2 style="font-size:26px">Record marks</h2>
+      <p class="small" style="margin-top:4px">Marks are out of 100. Leave a subject blank if it was not written.</p>
+    </div>
+    <div class="dialog-body">
+      <div class="grid-fields">
+        <div class="field">
+          <label for="f-name">Student name</label>
+          <input id="f-name" required placeholder="e.g. Kavipriya R" />
+        </div>
+        <div class="field">
+          <label for="f-title">Assessment</label>
+          <input id="f-title" required placeholder="e.g. Unit Test 5" />
+        </div>
+        <div class="field">
+          <label for="f-class">Class</label>
+          <select id="f-class"></select>
+        </div>
+        <div class="field">
+          <label for="f-section">Section</label>
+          <select id="f-section"></select>
+        </div>
+        <div class="field">
+          <label for="f-kind">Kind</label>
+          <select id="f-kind">
+            <option value="term">Term exam</option>
+            <option value="unit" selected>Unit test</option>
+            <option value="remedial">Remedial test</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-date">Date written</label>
+          <input id="f-date" class="mono" type="date" />
+        </div>
+      </div>
+      <div class="field" style="margin-top:18px">
+        <label for="f-upload">Upload mark sheet (optional)</label>
+        <input type="file" id="f-upload" accept="image/png,image/jpeg,image/webp" />
+      </div>
+      <div class="line" style="margin-top:10px">
+        <button class="btn btn-ghost" type="button" id="upload-analyze">Analyze mark sheet</button>
+        <span class="small" id="upload-status"></span>
+      </div>
+
+      <p class="label" style="margin-top:18px">Marks out of 100</p>
+      <div class="marks-grid" id="marks-grid"></div>
+      <p class="error" id="record-error" style="margin-top:12px" hidden></p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-ghost" type="button" id="record-cancel">Cancel</button>
+      <button class="btn" type="button" id="record-save">Save marks</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================== syllabus reference === */
+
+  var DAY = 86400000;
+
+  var SUBJECTS = [
+    { id: 'maths', name: 'Mathematics', short: 'Maths', topics: [
+      'Numbers and Sequences', 'Algebra — Simultaneous Equations', 'Geometry — Similar Triangles',
+      'Coordinate Geometry', 'Trigonometry — Heights and Distances', 'Mensuration — Surface Area',
+      'Statistics and Probability'] },
+    { id: 'science', name: 'Science', short: 'Science', topics: [
+      'Laws of Motion', 'Optics — Refraction', 'Thermal Physics', "Electricity — Ohm's Law",
+      'Periodic Classification of Elements', 'Carbon and its Compounds', 'Heredity'] },
+    { id: 'social', name: 'Social Science', short: 'Social', topics: [
+      'Outbreak of the First World War', 'Nationalism — Gandhian Era', 'Resources and Industries of India',
+      'Physical Geography of Tamil Nadu', 'Indian Constitution', 'Gross Domestic Product and its Growth'] },
+    { id: 'english', name: 'English', short: 'English', topics: [
+      'Reading Comprehension', 'Grammar — Tenses and Voice', 'Prepositions and Articles',
+      'Letter Writing — Formal', 'Vocabulary — Phrasal Verbs', 'Poetry Appreciation'] },
+    { id: 'tamil', name: 'Tamil', short: 'Tamil', topics: [
+      'இலக்கணம் — அணி இலக்கணம்', 'இலக்கணம் — வல்லினம் மிகும் இடங்கள்', 'செய்யுள் — பொருள் விளக்கம்',
+      'கட்டுரை எழுதுதல்', 'கடித வரைவு', 'திருக்குறள் விளக்கம்'] },
+    { id: 'computer', name: 'Computer Science', short: 'Computer', topics: [
+      'Algorithms and Flowcharts', 'Python — Functions and Parameters', 'Python — Lists and Tuples',
+      'Python — Dictionaries', 'HTML — Tables and Forms', 'Spreadsheets — Formulae'] }
+  ];
+
+  var SERIES = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--series-5)', 'var(--series-6)'];
+
+  var BANDS = [
+    { id: 'critical', label: 'Critical', min: 0, action: 'Daily remedial — 45 min' },
+    { id: 'needs-work', label: 'Needs work', min: 40, action: 'Rework past papers — 30 min' },
+    { id: 'developing', label: 'Developing', min: 60, action: 'Chapter drills — 20 min' },
+    { id: 'strong', label: 'Strong', min: 75, action: 'Timed revision — 15 min' },
+    { id: 'mastery', label: 'Mastery', min: 90, action: 'Hold with weekly recap' }
+  ];
+
+  var KINDS = {
+    term: { label: 'Term exam', glyph: 'triangle' },
+    unit: { label: 'Unit test', glyph: 'diamond' },
+    remedial: { label: 'Remedial test', glyph: 'square' }
+  };
+
+  var CLASSES = ['Class 9', 'Class 10', 'Class 11', 'Class 12'];
+  var SECTIONS = ['A', 'B', 'C', 'D'];
+
+  var RANGES = [
+    { id: '30d', label: '30D', days: 30 },
+    { id: '90d', label: '90D', days: 90 },
+    { id: '180d', label: '180D', days: 180 },
+    { id: 'all', label: 'ALL', days: 3650 }
+  ];
+
+  function subjectById(id) {
+    for (var i = 0; i < SUBJECTS.length; i++) if (SUBJECTS[i].id === id) return SUBJECTS[i];
+    return SUBJECTS[0];
+  }
+  function subjectIndex(id) {
+    for (var i = 0; i < SUBJECTS.length; i++) if (SUBJECTS[i].id === id) return i;
+    return 0;
+  }
+  function seriesColor(i) { return i < SERIES.length ? SERIES[i] : 'var(--series-other)'; }
+  function bandFor(score) {
+    var match = BANDS[0];
+    for (var i = 0; i < BANDS.length; i++) if (score >= BANDS[i].min) match = BANDS[i];
+    return match;
+  }
+  function tutorialQuery(cls, subject, topic) {
+    return 'Samacheer Kalvi ' + cls + ' ' + subject + ' ' + topic + ' explanation in Tamil';
+  }
+  function tutorialLink(cls, subject, topic) {
+    return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(tutorialQuery(cls, subject, topic));
+  }
+
+  /* ==================================================== demo + storage === */
+
+  var STORE_KEY = 'ai-teacher-v1';
+  var now = Date.now();
+
+  function demoData() {
+    function rep(id, student, cls, sec, title, kind, daysAgo, scores) {
+      return { id: id, student: student, cls: cls, section: sec, title: title, kind: kind, at: now - daysAgo * DAY, scores: scores };
+    }
+    return {
+      reports: [
+        rep('r1', 'Kavipriya R', 'Class 10', 'A', 'Quarterly Exam', 'term', 84, { tamil: 72, english: 64, maths: 34, science: 48, social: 59, computer: 68 }),
+        rep('r2', 'Kavipriya R', 'Class 10', 'A', 'Unit Test 3', 'unit', 61, { tamil: 75, english: 61, maths: 38, science: 52, social: 63, computer: 71 }),
+        rep('r3', 'Kavipriya R', 'Class 10', 'A', 'Maths Remedial Test', 'remedial', 44, { maths: 43, science: 55 }),
+        rep('r4', 'Kavipriya R', 'Class 10', 'A', 'Half Yearly Exam', 'term', 28, { tamil: 79, english: 66, maths: 47, science: 58, social: 68, computer: 77 }),
+        rep('r5', 'Kavipriya R', 'Class 10', 'A', 'Unit Test 4', 'unit', 12, { tamil: 82, english: 70, maths: 51, science: 63, social: 72, computer: 81 }),
+        rep('r6', 'Kavipriya R', 'Class 10', 'A', 'Revision Test 1', 'unit', 3, { tamil: 85, english: 73, maths: 56, science: 69, social: 74, computer: 88 }),
+        rep('r7', 'Aravind S', 'Class 10', 'B', 'Quarterly Exam', 'term', 80, { tamil: 58, english: 52, maths: 77, science: 36, social: 49, computer: 84 }),
+        rep('r8', 'Aravind S', 'Class 10', 'B', 'Unit Test 3', 'unit', 55, { tamil: 61, english: 55, maths: 81, science: 39, social: 53, computer: 88 }),
+        rep('r9', 'Aravind S', 'Class 10', 'B', 'Half Yearly Exam', 'term', 26, { tamil: 64, english: 58, maths: 85, science: 44, social: 57, computer: 91 }),
+        rep('r10', 'Aravind S', 'Class 10', 'B', 'Science Remedial Test', 'remedial', 9, { science: 52, maths: 88 }),
+        rep('r11', 'Meenakshi V', 'Class 9', 'A', 'Quarterly Exam', 'term', 76, { tamil: 91, english: 86, maths: 74, science: 82, social: 88, computer: 79 }),
+        rep('r12', 'Meenakshi V', 'Class 9', 'A', 'Unit Test 3', 'unit', 40, { tamil: 93, english: 84, maths: 69, science: 85, social: 90, computer: 83 }),
+        rep('r13', 'Meenakshi V', 'Class 9', 'A', 'Half Yearly Exam', 'term', 5, { tamil: 95, english: 89, maths: 72, science: 87, social: 92, computer: 86 })
+      ],
+      findings: [
+        { id: 'f1', student: 'Kavipriya R', subjectId: 'maths', topic: 'Algebra — Simultaneous Equations', mistake: 'Sign error when transposing terms in the elimination step (Q14b)', title: 'Revision Test 1', at: now - 3 * DAY },
+        { id: 'f2', student: 'Kavipriya R', subjectId: 'maths', topic: 'Trigonometry — Heights and Distances', mistake: 'Used tan instead of sin for the angle of elevation (Q22)', title: 'Revision Test 1', at: now - 3 * DAY },
+        { id: 'f3', student: 'Kavipriya R', subjectId: 'science', topic: "Electricity — Ohm's Law", mistake: 'Resistances in parallel added directly instead of using reciprocals', title: 'Unit Test 4', at: now - 12 * DAY },
+        { id: 'f4', student: 'Kavipriya R', subjectId: 'english', topic: 'Grammar — Tenses and Voice', mistake: 'Active to passive conversion left the tense unchanged in 3 of 5 sentences', title: 'Half Yearly Exam', at: now - 27 * DAY },
+        { id: 'f5', student: 'Aravind S', subjectId: 'science', topic: 'Periodic Classification of Elements', mistake: 'Group and period swapped when placing the element from its configuration', title: 'Science Remedial Test', at: now - 9 * DAY },
+        { id: 'f6', student: 'Aravind S', subjectId: 'social', topic: 'Nationalism — Gandhian Era', mistake: 'Dates of the Civil Disobedience Movement written a year late', title: 'Half Yearly Exam', at: now - 26 * DAY },
+        { id: 'f7', student: 'Meenakshi V', subjectId: 'maths', topic: 'Geometry — Similar Triangles', mistake: 'Skipped the AA similarity statement, so proof marks were cut', title: 'Half Yearly Exam', at: now - 5 * DAY }
+      ]
+    };
+  }
+
+  var db;
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    db = raw ? JSON.parse(raw) : demoData();
+  } catch (e) { db = demoData(); }
+  if (!db || !db.reports) db = demoData();
+
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch (e) { /* private mode: keep in memory */ }
+  }
+
+  var state = { student: null, rangeId: '90d', allSeries: true, window: null };
+
+  /* ========================================================== helpers === */
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmtDay(ms) {
+    return new Date(ms).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  }
+  function fmtFull(ms) {
+    return new Date(ms).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  function signed(v, unit) {
+    return (v >= 0 ? '+' : '−') + Math.abs(Math.round(v * 10) / 10) + (unit || '');
+  }
+  function relative(ms) {
+    var d = Math.round((Date.now() - ms) / DAY);
+    if (d <= 0) return 'today';
+    if (d === 1) return 'yesterday';
+    return d + 'd ago';
+  }
+  function avgOf(values) {
+    if (!values.length) return 0;
+    var sum = 0;
+    for (var i = 0; i < values.length; i++) sum += values[i];
+    return Math.round((sum / values.length) * 10) / 10;
+  }
+  function reportAverage(r) {
+    var vals = [];
+    for (var i = 0; i < SUBJECTS.length; i++) {
+      var v = r.scores[SUBJECTS[i].id];
+      if (typeof v === 'number') vals.push(v);
+    }
+    return avgOf(vals);
+  }
+  function overallAverage(reports) {
+    var vals = [];
+    reports.forEach(function (r) {
+      SUBJECTS.forEach(function (s) {
+        var v = r.scores[s.id];
+        if (typeof v === 'number') vals.push(v);
+      });
+    });
+    return avgOf(vals);
+  }
+  function toast(msg) {
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.classList.remove('show'); }, 2600);
+  }
+
+  /* Rule-based ranking: weakest band first, then lowest latest mark. */
+  function rankSubjects(reports) {
+    var ordered = reports.slice().sort(function (a, b) { return a.at - b.at; });
+    var out = [];
+    SUBJECTS.forEach(function (subject) {
+      var values = [];
+      ordered.forEach(function (r) {
+        var v = r.scores[subject.id];
+        if (typeof v === 'number') values.push(v);
+      });
+      if (!values.length) return;
+      var latest = values[values.length - 1];
+      out.push({
+        subjectId: subject.id,
+        name: subject.name,
+        short: subject.short,
+        latest: latest,
+        previous: values.length > 1 ? values[values.length - 2] : null,
+        average: avgOf(values),
+        attempts: values.length,
+        band: bandFor(latest),
+        colorIndex: subjectIndex(subject.id)
+      });
+    });
+    function bandRank(b) {
+      for (var i = 0; i < BANDS.length; i++) if (BANDS[i].id === b.id) return i;
+      return BANDS.length;
+    }
+    return out.sort(function (a, b) { return bandRank(a.band) - bandRank(b.band) || a.latest - b.latest; });
+  }
+
+  /* ============================================================ derive === */
+
+  function derive() {
+    var reports = db.reports.slice().sort(function (a, b) { return a.at - b.at; });
+    var seen = {};
+    var students = [];
+    reports.forEach(function (r) {
+      if (!seen[r.student]) { seen[r.student] = { name: r.student, cls: r.cls, section: r.section }; students.push(seen[r.student]); }
+      seen[r.student].cls = r.cls;
+      seen[r.student].section = r.section;
+    });
+    students.sort(function (a, b) { return a.name.localeCompare(b.name); });
+
+    var active = null;
+    for (var i = 0; i < students.length; i++) if (students[i].name === state.student) active = students[i];
+    if (!active) active = students[0] || null;
+
+    var mine = active ? reports.filter(function (r) { return r.student === active.name; }) : [];
+
+    var full;
+    if (!mine.length) full = [Date.now() - 90 * DAY, Date.now()];
+    else {
+      var first = mine[0].at, last = mine[mine.length - 1].at;
+      full = [Math.min(first, last - 7 * DAY) - DAY, Math.max(last, Date.now())];
+    }
+
+    var days = 90;
+    RANGES.forEach(function (r) { if (r.id === state.rangeId) days = r.days; });
+    var rangeWindow = [Math.max(full[0], full[1] - days * DAY), full[1]];
+    var win = state.window || rangeWindow;
+
+    var windowReports = mine.filter(function (r) { return r.at >= win[0] && r.at <= win[1]; });
+    var standings = rankSubjects(windowReports);
+    var lead = standings[0] || null;
+
+    var source = state.allSeries ? standings : standings.slice(0, 3);
+    var series = source.map(function (s) {
+      return {
+        id: s.subjectId,
+        label: s.short,
+        color: seriesColor(s.colorIndex),
+        lead: !!lead && lead.subjectId === s.subjectId,
+        points: windowReports.filter(function (r) { return typeof r.scores[s.subjectId] === 'number'; })
+          .map(function (r) { return { t: r.at, v: r.scores[s.subjectId] }; })
+      };
+    });
+
+    var markers = windowReports.map(function (r) { return { id: r.id, t: r.at, kind: r.kind, label: r.title }; });
+    var stripPoints = mine.map(function (r) { return { t: r.at, v: reportAverage(r) }; });
+    var findings = active ? db.findings.filter(function (f) { return f.student === active.name; })
+      .sort(function (a, b) { return b.at - a.at; }) : [];
+    var earlier = mine.filter(function (r) { return r.at < win[0]; });
+
+    return {
+      students: students, active: active, mine: mine, full: full, win: win,
+      windowReports: windowReports, standings: standings, lead: lead,
+      series: series, markers: markers, stripPoints: stripPoints,
+      findings: findings, earlier: earlier
+    };
+  }
+
+  /* ============================================================== plot === */
+
+  var LEFT = 44, BOTTOM = 24, TOP = 10;
+
+  function plotSvg(opts) {
+    var width = opts.width, height = opts.height, series = opts.series, markers = opts.markers || [];
+    var domain = opts.domain, compact = !!opts.compact;
+    if (width <= 0) return '';
+    var right = 96;
+    var innerW = Math.max(10, width - LEFT - right);
+    var innerH = Math.max(10, height - TOP - BOTTOM);
+    var t0 = domain[0], span = Math.max(1, domain[1] - domain[0]);
+    function x(t) { return LEFT + ((t - t0) / span) * innerW; }
+    function y(v) { return TOP + innerH - (v / 100) * innerH; }
+    function path(pts) {
+      return pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + x(p.t).toFixed(1) + ',' + y(p.v).toFixed(1); }).join(' ');
+    }
+
+    var out = '<svg width="' + width + '" height="' + height + '" role="img" aria-label="Marks trend for ' +
+      esc(series.map(function (s) { return s.label; }).join(', ')) + '">';
+
+    /* five horizontal grid lines, no vertical grid */
+    [0, 25, 50, 75, 100].forEach(function (tick) {
+      out += '<line class="grid-line" x1="' + LEFT + '" x2="' + (LEFT + innerW) + '" y1="' + y(tick) + '" y2="' + y(tick) + '" />';
+      out += '<text class="tick" x="' + (LEFT - 8) + '" y="' + (y(tick) + 4) + '" text-anchor="end">' + tick + '</text>';
+    });
+
+    /* marker guide lines are not grid lines */
+    markers.forEach(function (m) {
+      out += '<line class="guide-line" x1="' + x(m.t) + '" x2="' + x(m.t) + '" y1="' + TOP + '" y2="' + (TOP + innerH) + '" />';
+    });
+
+    /* area fill only under the lead series */
+    series.forEach(function (s) {
+      if (!s.lead || s.points.length < 2) return;
+      out += '<path d="' + path(s.points) + ' L' + x(s.points[s.points.length - 1].t) + ',' + (TOP + innerH) +
+        ' L' + x(s.points[0].t) + ',' + (TOP + innerH) + ' Z" fill="' + s.color + '" fill-opacity="0.12" />';
+    });
+
+    series.forEach(function (s) {
+      if (!s.points.length) return;
+      out += '<path class="series-line" d="' + path(s.points) + '" stroke="' + s.color + '" stroke-width="' +
+        (s.lead ? 2.25 : 1.75) + '" pathLength="1" />';
+      var last = s.points[s.points.length - 1];
+      out += '<circle cx="' + x(last.t) + '" cy="' + y(last.v) + '" r="3" fill="' + s.color + '" />';
+      out += '<text x="' + (x(last.t) + 8) + '" y="' + (y(last.v) + 4) + '" fill="' + s.color +
+        '" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11">' + esc(s.label) + '</text>';
+    });
+
+    if (!compact) {
+      [0, 0.5, 1].forEach(function (f, i) {
+        var t = t0 + span * f;
+        var anchor = i === 0 ? 'start' : i === 2 ? 'end' : 'middle';
+        out += '<text class="tick" x="' + x(t) + '" y="' + (height - 4) + '" text-anchor="' + anchor + '">' + fmtDay(t) + '</text>';
+      });
+    }
+
+    /* events pinned to the time axis, glyph + colour */
+    var showLabels = markers.length < 6 && !compact;
+    markers.forEach(function (m) {
+      var cx = x(m.t), cy = TOP + innerH + 6;
+      var glyph = KINDS[m.kind].glyph;
+      var fill = glyph === 'triangle' ? 'var(--series-1)' : glyph === 'diamond' ? 'var(--series-3)' : 'var(--series-other)';
+      var pts = glyph === 'triangle'
+        ? (cx + ',' + (cy - 5) + ' ' + (cx + 4.5) + ',' + (cy + 4) + ' ' + (cx - 4.5) + ',' + (cy + 4))
+        : glyph === 'diamond'
+          ? (cx + ',' + (cy - 5) + ' ' + (cx + 4.5) + ',' + cy + ' ' + cx + ',' + (cy + 5) + ' ' + (cx - 4.5) + ',' + cy)
+          : ((cx - 4) + ',' + (cy - 4) + ' ' + (cx + 4) + ',' + (cy - 4) + ' ' + (cx + 4) + ',' + (cy + 4) + ' ' + (cx - 4) + ',' + (cy + 4));
+      out += '<polygon points="' + pts + '" fill="' + fill + '" stroke="var(--bg)" stroke-width="1"><title>' +
+        esc(KINDS[m.kind].label + ' · ' + m.label) + '</title></polygon>';
+      if (showLabels) {
+        out += '<text class="tick" x="' + (cx + 8) + '" y="' + (cy + 4) + '">' + esc(m.label) + '</text>';
+      }
+    });
+
+    return out + '</svg>';
+  }
+
+  function stripSvg(width, points, full) {
+    if (width <= 0) return '';
+    var innerW = Math.max(10, width - LEFT - 96);
+    var f0 = full[0], span = Math.max(1, full[1] - full[0]);
+    var d = points.map(function (p, i) {
+      var x = LEFT + ((p.t - f0) / span) * innerW;
+      var y = 6 + 36 - (p.v / 100) * 36;
+      return (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    return '<svg width="' + width + '" height="48" aria-hidden="true"><path d="' + d +
+      '" fill="none" stroke="var(--series-other)" stroke-width="1.25" stroke-linejoin="round" /></svg>';
+  }
+
+  /* ============================================================ render === */
+
+  var app = document.getElementById('app');
+
+  function render() {
+    var d = derive();
+
+    document.getElementById('student-name').textContent = d.active ? d.active.name : 'Student performance';
+    document.getElementById('student-meta').textContent = d.active
+      ? d.active.cls + ' · Section ' + d.active.section + ' · Samacheer Kalvi'
+      : 'Record a set of marks to start tracking a student.';
+
+    var chips = document.getElementById('student-chips');
+    if (d.students.length > 1) {
+      chips.innerHTML = '<span class="label">Student</span>' + d.students.map(function (s) {
+        return '<button class="chip" data-student="' + esc(s.name) + '" aria-pressed="' +
+          (d.active && d.active.name === s.name) + '">' + esc(s.name) + '</button>';
+      }).join('');
+    } else chips.innerHTML = '';
+
+    if (!d.active) {
+      app.innerHTML =
+        '<section class="frame"><div class="empty">' +
+        '<h2>No students yet</h2>' +
+        '<p>Add a student\u2019s marks out of 100 and this page ranks their subjects from weakest to strongest, ' +
+        'then builds a practice plan around the chapters they lost marks in.</p>' +
+        '<div style="margin-top:24px"><button class="btn" data-open-record="1">+ Record the first marks</button></div>' +
+        '</div></section>';
+      return;
+    }
+
+    var avgNow = overallAverage(d.windowReports);
+    var avgBefore = overallAverage(d.earlier);
+    var delta = d.earlier.length ? avgNow - avgBefore : 0;
+    var critical = d.standings.filter(function (s) { return s.band.id === 'critical'; }).length;
+    var winDays = Math.max(1, Math.round((d.win[1] - d.win[0]) / DAY));
+    var leftPct = ((d.win[0] - d.full[0]) / Math.max(1, d.full[1] - d.full[0])) * 100;
+    var rightPct = ((d.win[1] - d.full[0]) / Math.max(1, d.full[1] - d.full[0])) * 100;
+
+    var html = '';
+
+    /* ---------------------------------------------- primary time chart --- */
+    html += '<section class="frame">' +
+      '<div class="dock">' +
+        '<h2>Marks by subject</h2>' +
+        '<div class="chip-row">' + RANGES.map(function (r) {
+          return '<button class="chip" data-range="' + r.id + '" aria-pressed="' +
+            (!state.window && state.rangeId === r.id) + '">' + r.label + '</button>';
+        }).join('') + '</div>' +
+        '<div class="chip-row"><span class="label">Series</span>' +
+          '<button class="chip" data-series="all" aria-pressed="' + state.allSeries + '">ALL</button>' +
+          '<button class="chip" data-series="weak" aria-pressed="' + !state.allSeries + '">WEAKEST 3</button>' +
+        '</div>' +
+        '<div class="legend">' + d.standings.map(function (s) {
+          return '<span><i class="swatch" style="background:' + seriesColor(s.colorIndex) + '"></i>' + esc(s.short) + '</span>';
+        }).join('') + '</div>' +
+      '</div>' +
+      '<div class="plot-wrap" id="primary-plot">' +
+        (d.windowReports.length === 0
+          ? '<div class="plot-empty"><p style="max-width:40ch">No assessments in this window. Widen the range or drag the strip below.</p></div>'
+          : '') +
+      '</div>' +
+      '<div class="strip" id="strip">' +
+        '<div class="brush" id="brush" style="left:' + leftPct + '%;width:' + Math.max(1, rightPct - leftPct) + '%">' +
+          '<button class="handle handle-l" data-handle="0" aria-label="Window start — use arrow keys"></button>' +
+          '<button class="handle handle-r" data-handle="1" aria-label="Window end — use arrow keys"></button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="window"><span>' + fmtDay(d.win[0]) + ' → ' + fmtDay(d.win[1]) + ' · ' + winDays + 'd</span>' +
+        (state.window ? '<button class="chip" data-reset-window="1">RESET WINDOW</button>' : '') +
+      '</div>' +
+    '</section>';
+
+    /* ------------------------------------------------ supporting charts --- */
+    html += '<div class="row-2">' +
+      '<section class="frame"><div class="pad">' +
+        '<p class="label">Overall average</p>' +
+        '<p class="readout">' + avgNow.toFixed(1) + '</p>' +
+        '<p class="small">' + (d.earlier.length
+          ? signed(delta, ' marks') + ' vs earlier assessments'
+          : 'First window on record — no comparison yet') + '</p>' +
+        '<div class="support-plot" data-support="top2"></div>' +
+      '</div></section>' +
+      '<section class="frame"><div class="pad">' +
+        '<p class="label">Weakest subject</p>' +
+        '<p class="readout">' + (d.lead ? d.lead.latest : '—') + '</p>' +
+        '<p class="small">' + (d.lead
+          ? esc(d.lead.name) + ' · ' + d.lead.band.label +
+            (d.lead.previous !== null ? ' · ' + signed(d.lead.latest - d.lead.previous, ' marks') : '')
+          : 'No marks in this window') + '</p>' +
+        '<div class="support-plot" data-support="lead"></div>' +
+      '</div></section>' +
+    '</div>';
+
+    /* ------------------------------------------------- priority ranking --- */
+    html += '<section class="frame">' +
+      '<div class="dock" style="justify-content:space-between">' +
+        '<h2>Study priority — weakest first</h2>' +
+        '<span class="axis">' + critical + ' critical · ' + d.standings.length + ' subjects</span>' +
+      '</div>';
+    if (!d.standings.length) {
+      html += '<p class="small" style="padding:32px 20px;text-align:center">No marks in this window to rank.</p>';
+    } else {
+      html += '<ul class="list">' + d.standings.map(function (s) {
+        var topic = subjectById(s.subjectId).topics[0];
+        return '<li><div class="line">' +
+          '<i class="swatch" style="width:10px;height:10px;border-radius:2px;background:' + seriesColor(s.colorIndex) + '"></i>' +
+          '<span class="subject-name">' + esc(s.name) + '</span>' +
+          '<span class="band' + (s.band.id === 'critical' ? ' critical' : '') + '">' + s.band.label + '</span>' +
+          '<span class="axis">latest ' + s.latest + ' · avg ' + s.average + ' · ' + s.attempts + ' tests' +
+            (s.previous !== null ? ' · ' + signed(s.latest - s.previous, '') : '') + '</span>' +
+          '<span class="small push">' + s.band.action + '</span>' +
+          '<a class="link" target="_blank" rel="noopener noreferrer"' +
+            ' href="' + esc(tutorialLink(d.active.cls, s.name, topic)) + '"' +
+            ' data-query="' + esc(tutorialQuery(d.active.cls, s.name, topic)) + '">Revise chapter 1 ↗</a>' +
+          '</div>' +
+          '<div class="bar" role="img" aria-label="' + esc(s.name) + ': ' + s.latest + ' out of 100">' +
+            '<div style="width:' + s.latest + '%;background:' + seriesColor(s.colorIndex) + '"></div>' +
+          '</div></li>';
+      }).join('') + '</ul>';
+    }
+    html += '</section>';
+
+    /* ------------------------------------------------ answer-sheet notes --- */
+    html += '<section class="frame">' +
+      '<div class="dock">' +
+        '<h2>Mistakes from answer sheets</h2>' +
+        '<span class="axis">' + d.findings.length + ' logged</span>' +
+        '<div class="push"><button class="btn btn-ghost" data-add-finding="1">+ Log a mistake</button></div>' +
+      '</div>' +
+      '<form class="pad" id="finding-form" hidden>' +
+        '<div class="grid-fields">' +
+          '<div class="field"><label for="m-subject">Subject</label><select id="m-subject">' +
+            SUBJECTS.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + '</option>'; }).join('') +
+          '</select></div>' +
+          '<div class="field"><label for="m-topic">Chapter / topic</label><select id="m-topic"></select></div>' +
+        '</div>' +
+        '<div class="field" style="margin-top:14px"><label for="m-text">What went wrong</label>' +
+          '<textarea id="m-text" placeholder="e.g. Sign error when transposing terms (Q14b)"></textarea></div>' +
+        '<p class="error" id="m-error" hidden></p>' +
+        '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">' +
+          '<button class="btn btn-ghost" type="button" data-cancel-finding="1">Cancel</button>' +
+          '<button class="btn" type="button" data-save-finding="1">Log mistake</button>' +
+        '</div>' +
+      '</form>';
+    if (!d.findings.length) {
+      html += '<div class="empty"><h2 style="font-size:20px">No mistakes logged yet</h2>' +
+        '<p>Log what was marked wrong on a corrected answer sheet and each entry gets its own Samacheer Kalvi tutorial search.</p></div>';
+    } else {
+      html += '<ul class="list">' + d.findings.map(function (f) {
+        var subject = subjectById(f.subjectId);
+        return '<li><div class="line">' +
+          '<i class="swatch" style="width:10px;height:10px;border-radius:2px;background:' + seriesColor(subjectIndex(f.subjectId)) + '"></i>' +
+          '<span class="subject-name">' + esc(subject.name) + '</span>' +
+          '<span class="axis">' + esc(f.topic) + '</span>' +
+          '<span class="axis push">' + esc(f.title) + ' · ' + relative(f.at) + '</span>' +
+          '<a class="link" target="_blank" rel="noopener noreferrer"' +
+            ' href="' + esc(tutorialLink(d.active.cls, subject.name, f.topic)) + '"' +
+            ' data-query="' + esc(tutorialQuery(d.active.cls, subject.name, f.topic)) + '">Watch tutorial ↗</a>' +
+          '<button class="btn-danger" data-del-finding="' + esc(f.id) + '">Remove</button>' +
+          '</div>' +
+          '<p class="small" style="margin-top:6px;color:var(--text)">' + esc(f.mistake) + '</p></li>';
+      }).join('') + '</ul>';
+    }
+    html += '</section>';
+
+    /* ------------------------------------------------------ assessments --- */
+    html += '<section class="frame">' +
+      '<div class="dock"><h2>Assessments in window</h2>' +
+        '<div class="legend">' + Object.keys(KINDS).map(function (k) {
+          return '<span><i class="glyph glyph-' + KINDS[k].glyph + '"></i>' + KINDS[k].label + '</span>';
+        }).join('') + '</div>' +
+      '</div>';
+    if (!d.windowReports.length) {
+      html += '<p class="small" style="padding:32px 20px;text-align:center">Nothing recorded in this window yet.</p>';
+    } else {
+      html += '<ul class="list">' + d.windowReports.slice().reverse().map(function (r) {
+        return '<li style="padding:12px 20px"><div class="line">' +
+          '<i class="glyph glyph-' + KINDS[r.kind].glyph + '"></i>' +
+          '<span>' + esc(r.title) + '</span>' +
+          '<span class="axis">' + fmtFull(r.at) + '</span>' +
+          '<span class="axis push">avg ' + reportAverage(r).toFixed(1) + ' · ' +
+            Object.keys(r.scores).length + ' subjects</span>' +
+          '<button class="btn-danger" data-del-report="' + esc(r.id) + '">Delete</button>' +
+        '</div></li>';
+      }).join('') + '</ul>';
+    }
+    html += '</section>';
+
+    app.innerHTML = html;
+
+    /* charts need real pixel widths, so they are drawn after layout */
+    var primary = document.getElementById('primary-plot');
+    if (primary && d.windowReports.length) {
+      primary.innerHTML = plotSvg({
+        width: primary.clientWidth, height: 224, series: d.series, markers: d.markers, domain: d.win
+      });
+    }
+    var strip = document.getElementById('strip');
+    if (strip) {
+      var svg = stripSvg(strip.clientWidth, d.stripPoints, d.full);
+      strip.insertAdjacentHTML('afterbegin', svg);
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.support-plot'), function (el) {
+      var which = el.getAttribute('data-support');
+      var series = which === 'lead' ? d.series.filter(function (s) { return s.lead; }) : d.series.slice(0, 2);
+      el.innerHTML = series.length
+        ? plotSvg({ width: el.clientWidth, height: 120, series: series, domain: d.win, compact: true })
+        : '<div style="height:120px"></div>';
+    });
+
+    syncTopics();
+    lastDerived = d;
+  }
+
+  var lastDerived = null;
+
+  /* ========================================================== events === */
+
+  function openRecord() {
+    var d = lastDerived || derive();
+    document.getElementById('f-name').value = d.active ? d.active.name : '';
+    document.getElementById('f-title').value = '';
+    document.getElementById('f-class').value = d.active ? d.active.cls : 'Class 10';
+    document.getElementById('f-section').value = d.active ? d.active.section : 'A';
+    document.getElementById('f-kind').value = 'unit';
+    document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-mark]'), function (i) { i.value = ''; });
+    document.getElementById('record-error').hidden = true;
+    var uploadInput = document.getElementById('f-upload');
+    if (uploadInput) uploadInput.value = '';
+    setUploadStatus('');
+    document.getElementById('record-dialog').showModal();
+  }
+
+  /* ------------------------------------------------- mark sheet upload --- */
+
+  var SUBJECT_HINTS = SUBJECTS.map(function (s) { return s.id + ' = ' + s.name; }).join(', ');
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result).split(',')[1] || ''); };
+      reader.onerror = function () { reject(new Error('Could not read that file.')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setUploadStatus(msg, isError) {
+    var el = document.getElementById('upload-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isError ? 'var(--series-3)' : 'var(--muted)';
+  }
+
+  function analyzeMarkSheet() {
+    var input = document.getElementById('f-upload');
+    var btn = document.getElementById('upload-analyze');
+    var file = input && input.files && input.files[0];
+    if (!file) { setUploadStatus('Choose a photo of the mark sheet first.', true); return; }
+
+    btn.disabled = true;
+    setUploadStatus('Reading mark sheet…');
+
+    fileToBase64(file).then(function (base64) {
+      var mediaType = file.type || 'image/jpeg';
+      var prompt = 'You are reading a photographed or scanned student mark sheet / answer sheet cover page. ' +
+        'Extract subject-wise marks. Valid subject ids and their names are: ' + SUBJECT_HINTS + '. ' +
+        'Match whatever subject names appear on the sheet (English or Tamil, abbreviations, etc.) to the closest id ' +
+        'from that list — skip anything that is not one of those subjects. ' +
+        'If a mark is out of a total other than 100 (e.g. out of 25 or 50), convert it to a mark out of 100, ' +
+        'rounded to the nearest whole number. Also read the assessment/exam title and the date written on the sheet ' +
+        'if visible. Respond with ONLY a raw JSON object, no markdown fences, no commentary, in exactly this shape: ' +
+        '{"title": string or null, "date": "YYYY-MM-DD" or null, "marks": {"<subject_id>": number, ...}}';
+
+      return fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+              { type: 'text', text: prompt }
+            ]
+          }]
+        })
+      });
+    }).then(function (response) {
+      if (!response.ok) throw new Error('The analysis service did not respond (status ' + response.status + ').');
+      return response.json();
+    }).then(function (data) {
+      var text = (data.content || []).map(function (block) { return block.text || ''; }).join('').trim();
+      var clean = text.replace(/```json|```/g, '').trim();
+      var parsed;
+      try { parsed = JSON.parse(clean); } catch (e) { throw new Error('Could not read marks from that image clearly. Try a sharper photo.'); }
+      if (!parsed || typeof parsed !== 'object' || !parsed.marks) throw new Error('Could not find any marks on that image.');
+
+      var filled = 0, weakest = null;
+      Object.keys(parsed.marks).forEach(function (id) {
+        var n = Number(parsed.marks[id]);
+        if (!isFinite(n)) return;
+        n = Math.max(0, Math.min(100, Math.round(n)));
+        var field = document.getElementById('mk-' + id);
+        if (!field) return;
+        field.value = n;
+        filled++;
+        if (!weakest || n < weakest.n) weakest = { id: id, n: n };
+      });
+
+      if (!filled) { setUploadStatus('Could not match any subjects on that sheet — enter marks manually.', true); return; }
+
+      if (parsed.title && !document.getElementById('f-title').value.trim()) {
+        document.getElementById('f-title').value = parsed.title;
+      }
+      if (parsed.date && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date)) {
+        document.getElementById('f-date').value = parsed.date;
+      }
+
+      var msg = 'Filled ' + filled + ' subject' + (filled === 1 ? '' : 's') + ' from the mark sheet.';
+      if (weakest) msg += ' Weakest: ' + subjectById(weakest.id).name + ' (' + weakest.n + '/100).';
+      setUploadStatus(msg);
+    }).catch(function (err) {
+      setUploadStatus((err && err.message) || 'Could not analyze that image. Try a clearer photo or enter marks manually.', true);
+    }).finally(function () {
+      btn.disabled = false;
+    });
+  }
+
+  var uploadBtn = document.getElementById('upload-analyze');
+  if (uploadBtn) uploadBtn.addEventListener('click', analyzeMarkSheet);
+
+  function saveRecord() {
+    var err = document.getElementById('record-error');
+    var name = document.getElementById('f-name').value.trim();
+    var title = document.getElementById('f-title').value.trim();
+    var dateVal = document.getElementById('f-date').value;
+    if (!name) { err.textContent = 'Enter the student\u2019s name so the marks attach to a record.'; err.hidden = false; return; }
+    if (!title) { err.textContent = 'Name the assessment, e.g. “Unit Test 5”.'; err.hidden = false; return; }
+
+    var scores = {};
+    var bad = false, any = false;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-mark]'), function (input) {
+      var raw = input.value.trim();
+      if (!raw) return;
+      var n = Number(raw);
+      if (!isFinite(n) || n < 0 || n > 100) { bad = true; return; }
+      scores[input.getAttribute('data-mark')] = Math.round(n);
+      any = true;
+    });
+    if (bad) { err.textContent = 'Marks must be numbers between 0 and 100.'; err.hidden = false; return; }
+    if (!any) { err.textContent = 'Enter at least one subject mark.'; err.hidden = false; return; }
+
+    db.reports.push({
+      id: 'r' + Date.now(),
+      student: name,
+      cls: document.getElementById('f-class').value,
+      section: document.getElementById('f-section').value,
+      title: title,
+      kind: document.getElementById('f-kind').value,
+      at: dateVal ? new Date(dateVal + 'T09:00:00').getTime() : Date.now(),
+      scores: scores
+    });
+    save();
+    state.student = name;
+    state.window = null;
+    document.getElementById('record-dialog').close();
+    render();
+    toast('Marks saved for ' + name + '.');
+  }
+
+  function syncTopics() {
+    var subject = document.getElementById('m-subject');
+    var topic = document.getElementById('m-topic');
+    if (!subject || !topic) return;
+    var list = subjectById(subject.value).topics;
+    topic.innerHTML = list.map(function (t) { return '<option value="' + esc(t) + '">' + esc(t) + '</option>'; }).join('');
+  }
+
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'm-subject') syncTopics();
+  });
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-student],[data-range],[data-series],[data-reset-window],[data-open-record],[data-add-finding],[data-cancel-finding],[data-save-finding],[data-del-finding],[data-del-report],a.link') : null;
+    if (!t) return;
+
+    if (t.matches('a.link')) {
+      /* Some embedded previews block YouTube. Fall back to the copyable search. */
+      e.preventDefault();
+      var win = window.open(t.getAttribute('href'), '_blank', 'noopener');
+      if (!win) showBlockedNote(t);
+      return;
+    }
+    if (t.hasAttribute('data-student')) { state.student = t.getAttribute('data-student'); state.window = null; render(); return; }
+    if (t.hasAttribute('data-range')) { state.rangeId = t.getAttribute('data-range'); state.window = null; render(); return; }
+    if (t.hasAttribute('data-series')) { state.allSeries = t.getAttribute('data-series') === 'all'; render(); return; }
+    if (t.hasAttribute('data-reset-window')) { state.window = null; render(); return; }
+    if (t.hasAttribute('data-open-record')) { openRecord(); return; }
+    if (t.hasAttribute('data-add-finding')) {
+      var form = document.getElementById('finding-form');
+      form.hidden = false;
+      syncTopics();
+      document.getElementById('m-text').focus();
+      return;
+    }
+    if (t.hasAttribute('data-cancel-finding')) {
+      document.getElementById('finding-form').hidden = true;
+      document.getElementById('m-error').hidden = true;
+      return;
+    }
+    if (t.hasAttribute('data-save-finding')) {
+      var text = document.getElementById('m-text').value.trim();
+      var mErr = document.getElementById('m-error');
+      if (!text) { mErr.textContent = 'Describe the mistake so the practice link is targeted.'; mErr.hidden = false; return; }
+      var d = lastDerived || derive();
+      db.findings.unshift({
+        id: 'f' + Date.now(),
+        student: d.active.name,
+        subjectId: document.getElementById('m-subject').value,
+        topic: document.getElementById('m-topic').value,
+        mistake: text,
+        title: (d.windowReports[d.windowReports.length - 1] || {}).title || 'Answer sheet',
+        at: Date.now()
+      });
+      save();
+      render();
+      toast('Mistake logged and added to the plan.');
+      return;
+    }
+    if (t.hasAttribute('data-del-finding')) {
+      var fid = t.getAttribute('data-del-finding');
+      db.findings = db.findings.filter(function (f) { return f.id !== fid; });
+      save(); render(); toast('Mistake removed.');
+      return;
+    }
+    if (t.hasAttribute('data-del-report')) {
+      var rid = t.getAttribute('data-del-report');
+      if (!confirm('Delete this assessment? The marks in it are removed from every chart.')) return;
+      db.reports = db.reports.filter(function (r) { return r.id !== rid; });
+      save(); render(); toast('Assessment deleted.');
+      return;
+    }
+  });
+
+  function showBlockedNote(anchor) {
+    var existing = anchor.parentNode.querySelector('.note');
+    if (existing) { existing.remove(); return; }
+    var q = anchor.getAttribute('data-query') || '';
+    var note = document.createElement('div');
+    note.className = 'note';
+    note.innerHTML = '<p class="small" style="color:var(--text)">This preview blocked the new tab. ' +
+      'Copy the search below, or open the link in a normal browser tab.</p>' +
+      '<p class="mono" style="margin-top:6px">' + esc(q) + '</p>';
+    var copy = document.createElement('button');
+    copy.className = 'btn btn-ghost';
+    copy.style.marginTop = '10px';
+    copy.textContent = 'Copy search words';
+    copy.addEventListener('click', function () {
+      if (navigator.clipboard) navigator.clipboard.writeText(q);
+      toast('Search copied.');
+    });
+    note.appendChild(copy);
+    anchor.parentNode.appendChild(note);
+  }
+
+  /* --------------------------------------------------- brush dragging --- */
+
+  var drag = null;
+
+  document.addEventListener('pointerdown', function (e) {
+    var h = e.target.closest ? e.target.closest('[data-handle]') : null;
+    if (!h) return;
+    e.preventDefault();
+    var strip = document.getElementById('strip');
+    drag = { edge: Number(h.getAttribute('data-handle')), rect: strip.getBoundingClientRect() };
+  });
+
+  document.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var d = lastDerived || derive();
+    var innerLeft = drag.rect.left + LEFT;
+    var innerW = Math.max(10, drag.rect.width - LEFT - 96);
+    var frac = Math.min(1, Math.max(0, (e.clientX - innerLeft) / innerW));
+    var t = d.full[0] + frac * (d.full[1] - d.full[0]);
+    var next = [d.win[0], d.win[1]];
+    next[drag.edge] = t;
+    if (next[1] - next[0] < 3 * DAY) return;
+    state.window = next;
+    render();
+  });
+
+  document.addEventListener('pointerup', function () { drag = null; });
+
+  document.addEventListener('keydown', function (e) {
+    var h = document.activeElement;
+    if (!h || !h.hasAttribute || !h.hasAttribute('data-handle')) return;
+    var step = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    var d = lastDerived || derive();
+    var edge = Number(h.getAttribute('data-handle'));
+    var next = [d.win[0], d.win[1]];
+    next[edge] = Math.min(d.full[1], Math.max(d.full[0], next[edge] + step * DAY * (e.shiftKey ? 7 : 1)));
+    if (next[1] - next[0] < 3 * DAY) return;
+    state.window = next;
+    render();
+    var again = document.querySelector('[data-handle="' + edge + '"]');
+    if (again) again.focus();
+  });
+
+  /* --------------------------------------------------------- chrome --- */
+
+  document.getElementById('open-record').addEventListener('click', openRecord);
+  document.getElementById('record-save').addEventListener('click', saveRecord);
+  document.getElementById('record-cancel').addEventListener('click', function () {
+    document.getElementById('record-dialog').close();
+  });
+  document.getElementById('reset').addEventListener('click', function () {
+    if (!confirm('Replace everything in this browser with the demo students?')) return;
+    db = demoData(); save(); state.student = null; state.window = null; render(); toast('Demo data restored.');
+  });
+
+  document.getElementById('f-class').innerHTML = CLASSES.map(function (c) {
+    return '<option' + (c === 'Class 10' ? ' selected' : '') + '>' + c + '</option>';
+  }).join('');
+  document.getElementById('f-section').innerHTML = SECTIONS.map(function (s) { return '<option>' + s + '</option>'; }).join('');
+  document.getElementById('marks-grid').innerHTML = SUBJECTS.map(function (s) {
+    return '<div class="field"><label for="mk-' + s.id + '">' + esc(s.short) + '</label>' +
+      '<input class="mono" id="mk-' + s.id + '" data-mark="' + s.id + '" type="number" min="0" max="100" inputmode="numeric" placeholder="—" /></div>';
+  }).join('');
+
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(render, 120);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
